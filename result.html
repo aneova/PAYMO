@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Результаты отправки</title>
+</head>
+<body>
+  <div id="result">
+    <h2>Результаты отправки данных</h2>
+    <pre id="postData"></pre>
+  </div>
+
+  <script>
+    const postData = JSON.parse(localStorage.getItem('postData'));
+    document.getElementById('postData').textContent = JSON.stringify(postData, null, 2);
+  </script>
+</body>
+</html>
