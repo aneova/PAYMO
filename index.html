@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Форма оплаты</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+</head>
+<body>
+<div id="app">
+  <form @submit.prevent="submitForm">
+    <h2>Оплата: {{initiatorName}} - {{collectionName}}</h2>
+    
+    <!-- Номер карты -->
+    <div>
+      <label for="cardNumber">Номер карты</label>
+      <input type="text" v-model="formattedCardNumber" maxlength="19" placeholder="1234 5678 9012 3456" @input="formatCardNumber">
+      <span v-if="formSubmitted && !isValidCard" class="error">Неверный номер карты</span>
+    </div>
+
+    <!-- Дата и CVC в одной строке -->
+    <div class="flex-row">
+      <div class="half-width">
+        <label for="expiryDate">Срок действия</label>
+        <input type="text" v-model="expiryDate" maxlength="5" placeholder="MM/YY" @input="formatExpiryDate">
+        <span v-if="formSubmitted && !isValidExpiryDate" class="error">Некорректный срок действия</span>
+      </div>
+      <div class="half-width">
+        <label for="cvc">CVC</label>
+        <input type="password" v-model="cvc" maxlength="3" placeholder="CVC">
+        <span v-if="formSubmitted && !isValidCVC" class="error">Неверный CVC</span>
+      </div>
+    </div>
+
+    <!-- Сумма перевода -->
+    <div>
+      <label for="amount">Сумма перевода</label>
+      <input type="number" v-model="amount" min="10" placeholder="Сумма не менее 10 руб.">
+      <span v-if="formSubmitted && !isValidAmount" class="error">Минимальная сумма — 10 рублей</span>
+    </div>
+
+    <!-- Имя и сообщение -->
+    <div>
+      <label for="name">Ваше имя</label>
+      <input type="text" v-model="name" maxlength="50">
+    </div>
+    <div>
+      <label for="message">Сообщение</label>
+      <textarea v-model="message" maxlength="50"></textarea>
+    </div>
+
+    <!-- Кнопка отправки -->
+    <button type="submit">Отправить</button>
+  </form>
+</div>
+
+<script>
+  new Vue({
+    el: "#app",
+    data: {
+      initiatorName: "Иван.К",
+      collectionName: "Экскурсия",
+      cardNumber: '',
+      formattedCardNumber: '',
+      expiryDate: '',
+      cvc: '',
+      amount: null,
+      name: '',
+      message: '',
+      isValidCard: true,
+      formSubmitted: false
+    },
+    computed: {
+      isValidAmount() {
+        return this.amount >= 10;
+      },
+      isValidExpiryDate() {
+        const regex = /^(0[1-9]|1[0-2])\/\d{2}$/;
+        return regex.test(this.expiryDate);
+      },
+      isValidCVC() {
+        return /^\d{3}$/.test(this.cvc);
+      },
+      formValid() {
+        return this.isValidCard && this.isValidAmount && this.isValidExpiryDate && this.isValidCVC;
+      }
+    },
+    methods: {
+      formatCardNumber() {
+        this.cardNumber = this.formattedCardNumber.replace(/\s/g, '');
+        this.isValidCard = this.luhnCheck(this.cardNumber);
+        this.formattedCardNumber = this.cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ');
+      },
+      formatExpiryDate() {
+        this.expiryDate = this.expiryDate.replace(/\D/g, '');
+        if (this.expiryDate.length > 2) {
+          this.expiryDate = this.expiryDate.slice(0, 2) + '/' + this.expiryDate.slice(2);
+        }
+      },
+      luhnCheck(value) {
+        let sum = 0;
+        let shouldDouble = false;
+        for (let i = value.length - 1; i >= 0; i--) {
+          let digit = parseInt(value[i]);
+          if (shouldDouble) {
+            digit *= 2;
+            if (digit > 9) digit -= 9;
+          }
+          sum += digit;
+          shouldDouble = !shouldDouble;
+        }
+        return sum % 10 === 0;
+      },
+      submitForm() {
+        this.formSubmitted = true;
+        if (this.formValid) {
+          const postData = {
+            api_key: "316b2be8-3475-4462-bd57-c7794d4bdb53",
+            transaction: Date.now().toString(),
+            description: "Оплата экскурсии",
+            amount: this.amount,
+            custom_data: {
+              initiator: this.initiatorName,
+              collection: this.collectionName,
+              name: this.name,
+              message: this.message
+            }
+          };
+          
+          // Сохранение данных в localStorage и переход на другую страницу
+          localStorage.setItem('postData', JSON.stringify(postData));
+          window.location.href = 'result.html';
+        }
+      }
+    }
+  });
+</script>
+</body>
+</html>
